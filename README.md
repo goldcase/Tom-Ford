@@ -2,4 +2,9 @@
 
 A RESTful API for rap analytics; the backend for the Tom Ford web app.
 
-Following SOA (Service Oriented Architecture) architectural pattern and aiming for loose coupling.
+##Goals
+- Learn about RESTful API Architecture
+- Learn and implement SOA (Service Oriented Architecture)
+- Make an API for rap analytics
+- Stateless API
+- Loose coupling

@@ -87,7 +87,7 @@ def tokenize():
 	return jsonify({ "tokenized_lyrics": transcribe_list(lyrics) })
 
 # Params: tokenized_lyrics property inside JSON
-# Returns: syllable object in 
+# Returns: object with syllables_by_line property containing an array of syllables with counts for each line
 @app.route("/tomford/api/syllables/", methods=["POST"])
 def syllables():
 	if not request.json or not "tokenized_lyrics" in request.json:
