@@ -58,12 +58,46 @@ def syllables_line(l):
 		if len(word) == phoneme_count and not(len(temp) == 0):
 			syllables[-1] += temp
 
-
 	return {"syllables": syllables, "count": syllable_count}
 
 # Returns list of objects of lists of syllables of that line without word boundaries and associated count.
 def get_syllables_and_count(tokenized_lyrics):
 	return [syllables_line(line) for line in tokenized_lyrics]
+
+def get_ending_from_syllables(syllables):
+	syllable = syllables[-1]
+	ret = []
+
+	pprint.pprint(syllable)
+
+	i = len(syllable) - 1
+	while i >= 0:
+		token = syllable[i]
+		ret.insert(0, token)
+		if token[-1].isdigit():
+			break
+		i -= 1
+
+	return ret
+
+def get_perfect_rhymes(syllables_dict):
+	perfect_rhymes = []
+	perfect_rhyme_count = 0
+
+	# TODO: memoize for perf
+	for i in range(len(syllables_dict) - 1):
+		this_line= syllables_dict[i]["syllables"]
+		next_line = syllables_dict[i + 1]["syllables"]
+		this_ending = get_ending_from_syllables(this_line)
+		next_ending = get_ending_from_syllables(next_line)
+
+		if this_ending == next_ending:
+			perfect_rhymes.append([this_ending, next_ending])
+			perfect_rhyme_count += 1
+
+		i += 1
+
+	return {"perfect_rhymes": perfect_rhymes, "count": perfect_rhyme_count}
 
 @app.errorhandler(404)
 def not_found(error):
@@ -73,11 +107,19 @@ def not_found(error):
 def index():
     return jsonify({ "message": "Welcome to the Tom Ford rap analytics API!" })
 
-# Params: list of strings in JSON.
-# Returns: a transcribed list of the passed-in lyrics.
 @app.route("/tomford/api/tokenize", methods=["POST"])
 def tokenize():
-	# Abort if there is no request or if the request doesn't contain the lyrics property.
+	"""
+	Returns a transcribed, tokenized, and scrubbed list of the passed-in lyrics.
+
+	request ::=
+		POST ({
+			"lyrics": [str]
+			})
+	"""
+
+	# Abort if there is no request or if the request 
+	# doesn't contain the lyrics property.
 	if not request.json or not "lyrics" in request.json:
 		abort(400)
 
@@ -90,6 +132,15 @@ def tokenize():
 # Returns: object with syllables_by_line property containing an array of syllables with counts for each line
 @app.route("/tomford/api/syllables/", methods=["POST"])
 def syllables():
+	"""
+	Returns an object with a property "syllables_by_line" that contains an array
+	of objects containing syllables and counts.
+
+	Response ::=
+		{
+			"syllables_by_line": [{"syllables": [str], "count": int}]
+		}
+	"""
 	if not request.json or not "tokenized_lyrics" in request.json:
 		abort(400)
 
@@ -103,9 +154,26 @@ def syllables():
 def detection():
 	return jsonify({ "message": "Detecting all schemes. Welcome." })
 
-@app.route("/tomford/api/detect/perfect/", methods=["GET", "POST"])
+@app.route("/tomford/api/detect/perfect/", methods=["POST"])
 def detect_perfect():
-	return jsonify({ "message": "Detecting perfect rhymes." })
+	"""
+	Returns list of perfect rhymes by immediate rhyming couplet.
+
+	Request ::=
+		POST({
+			"syllables_by_line": []
+			})
+
+	Response ::=
+		{
+			"perfect_rhymes": [],
+			"count": <int>
+		}
+	"""
+	if not request.json or not "syllables_by_line" in request.json:
+		abort(400)
+
+	return jsonify(get_perfect_rhymes(request.json["syllables_by_line"]))
 
 @app.route("/tomford/api/detect/multi/", methods=["GET", "POST"])
 def detect_multis():
